@@ -108,6 +108,15 @@ static id RLMValidatedObjectForProperty(id obj, RLMProperty *prop, RLMSchema *sc
                 obj = defaultValues[prop.name];
             }
 
+            if ([obj isKindOfClass:[NSString class]]) {
+                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+                [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
+                NSDate *date = [formatter dateFromString:obj];
+                if (date) {
+                    obj = date;
+                }
+            }
+            
             obj = RLMValidatedObjectForProperty(obj, prop, schema);
             [self setValue:RLMNSNullToNil(obj) forKeyPath:prop.name];
         }
