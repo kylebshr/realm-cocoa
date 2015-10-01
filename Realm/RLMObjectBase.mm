@@ -93,13 +93,31 @@ static id RLMValidatedObjectForProperty(id obj, RLMProperty *prop, RLMSchema *sc
     }
     else {
         // assume our object is an NSDictionary or an object with kvc properties
+
+        if ([value isKindOfClass:[NSDictionary class]]) {
+            NSMutableDictionary *newDict = [value mutableCopy];
+            NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+            [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
+            for (NSString *key in value) {
+                if ([value[key] isKindOfClass:[NSString class]]) {
+                    NSDate *date = [formatter dateFromString:value[key]];
+                    if (date) {
+                        newDict[key] = date;
+                    }
+                }
+            }
+            value = newDict;
+        }
+
         NSDictionary *defaultValues = nil;
         for (RLMProperty *prop in properties) {
+
             id obj = RLMValidatedValueForProperty(value, prop.name, _objectSchema.className);
 
             if (!obj) {
                 obj = RLMValidatedValueForUnderscoredProperty(value, prop.name, _objectSchema.className);
             }
+
             // get default for nil object
             if (!obj) {
                 if (!defaultValues) {
@@ -108,15 +126,6 @@ static id RLMValidatedObjectForProperty(id obj, RLMProperty *prop, RLMSchema *sc
                 obj = defaultValues[prop.name];
             }
 
-            if ([obj isKindOfClass:[NSString class]]) {
-                NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-                [formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZ"];
-                NSDate *date = [formatter dateFromString:obj];
-                if (date) {
-                    obj = date;
-                }
-            }
-            
             obj = RLMValidatedObjectForProperty(obj, prop, schema);
             [self setValue:RLMNSNullToNil(obj) forKeyPath:prop.name];
         }
@@ -404,7 +413,7 @@ BOOL RLMObjectBaseAreEqual(RLMObjectBase *o1, RLMObjectBase *o2) {
     }
     // if table and index are the same
     return o1->_row.get_table() == o2->_row.get_table()
-        && o1->_row.get_index() == o2->_row.get_index();
+    && o1->_row.get_index() == o2->_row.get_index();
 }
 
 id RLMValidatedValueForProperty(id object, NSString *key, NSString *className) {
